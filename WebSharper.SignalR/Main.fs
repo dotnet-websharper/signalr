@@ -42,22 +42,26 @@ module Definition =
             "log" => LogLevel?logLevel * T<string>?message ^-> T<string>
         ]
 
-    let DefaultHttpClient =
-        Class "DefaultHttpClient"
-        |+> Static [
-            Constructor ILogger?logger // ILogger
-        ]
+    let HttpClient =
+        Class "HttpClient"
         |+> Instance [
-            "delete" => T<string>?url * HttpRequest?options ^-> HttpRequest // T<Promise<HttpRequest>>
+            "delete" => T<string>?url * !? HttpRequest?options ^-> HttpRequest // T<Promise<HttpRequest>>
             |> WithComment "Issues an HTTP DELETE request to the specified URL, returning a Promise that resolves with an HttpResponse representing the result."
-            "get" => T<string>?url * HttpRequest?options ^-> HttpRequest // T<Promise<HttpRequest>>
+            "get" => T<string>?url * !? HttpRequest?options ^-> HttpRequest // T<Promise<HttpRequest>>
             |> WithComment "Issues an HTTP GET request to the specified URL, returning a Promise that resolves with an HttpResponse representing the result."
             "getCookieString" => T<string> ^-> T<string>
             |> WithComment "Gets the cookiestring"
-            "post" => T<string>?url * HttpRequest?options ^-> HttpRequest // T<Promise<HttpRequest>>
+            "post" => T<string>?url * !? HttpRequest?options ^-> HttpRequest // T<Promise<HttpRequest>>
             |> WithComment "Issues an HTTP POST request to the specified URL, returning a Promise that resolves with an HttpResponse representing the result."
-            "send" => HttpRequest ^-> HttpRequest // T<Promise<HttpRequest>>
+            "send" => HttpRequest ^-> !? HttpRequest // T<Promise<HttpRequest>>
             |>WithComment "Send a request, returning a Promise that resolves with an HttpResponse representing the result."
+        ]
+
+    let DefaultHttpClient =
+        Class "DefaultHttpClient"
+        |=> Inherits HttpClient
+        |+> Static [
+            Constructor ILogger?logger // ILogger
         ]
 
     let AbortError =
@@ -87,6 +91,19 @@ module Definition =
             "statusCode" =? T<int>
         ]
 
+    let TimeoutError =
+        Class "TimeoutError"
+        |+> Static [
+            Constructor T<string>?errorMessage
+
+            "ErrorConstructor" =? T<Error> // ErrorConstructor
+        ]
+        |+> Instance [
+            "message" =? T<string>
+            "name" =? T<string>
+            "stack" =? !? T<string>
+        ]
+
     let Assembly =
         Assembly [
             Namespace "WebSharper.SignalR.Resources" [
@@ -100,6 +117,8 @@ module Definition =
                 DefaultHttpClient
                 AbortError
                 HttpError
+                TimeoutError
+                HttpClient
             ]
         ]
 
