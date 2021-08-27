@@ -25,10 +25,27 @@ module Definition =
             "url" =? !? T<string>
         ]
 
+    let LogLevel =
+        Pattern.EnumInlines "LogLevel" [
+            "Trace", "0"
+            "Debug", "1"
+            "Information", "2"
+            "Warning", "3"
+            "Error", "4"
+            "Critical", "5"
+            "None", "6"
+        ]
+
+    let ILogger =
+        Interface "ILogger"
+        |++> [
+            "log" => LogLevel?logLevel * T<string>?message ^-> T<string>
+        ]
+
     let DefaultHttpClient =
         Class "DefaultHttpClient"
         |+> Static [
-            Constructor T<unit>
+            Constructor ILogger?logger // ILogger
         ]
         |+> Instance [
             "delete" => T<string>?url * HttpRequest?options ^-> HttpRequest // T<Promise<HttpRequest>>
@@ -43,6 +60,33 @@ module Definition =
             |>WithComment "Send a request, returning a Promise that resolves with an HttpResponse representing the result."
         ]
 
+    let AbortError =
+        Class "AbortError"
+        |+> Static [
+            Constructor T<string>?errorMessage
+
+            "ErrorConstructor" =? T<Error> // ErrorConstructor
+        ]
+        |+> Instance [
+            "message" =? T<string>
+            "name" =? T<string>
+            "stack" =? !? T<string>
+        ]
+
+    let HttpError =
+        Class "HttpError"
+        |+> Static [
+            Constructor (T<string>?errorMessage * T<int>?statusCode)
+
+            "ErrorConstructor" =? T<Error> // ErrorConstructor
+        ]
+        |+> Instance [
+            "message" =? T<string>
+            "name" =? T<string>
+            "stack" =? !? T<string>
+            "statusCode" =? T<int>
+        ]
+
     let Assembly =
         Assembly [
             Namespace "WebSharper.SignalR.Resources" [
@@ -51,7 +95,11 @@ module Definition =
             Namespace "WebSharper.SignalR" [
                 AbortSignal
                 HttpRequest
+                LogLevel
+                ILogger
                 DefaultHttpClient
+                AbortError
+                HttpError
             ]
         ]
 
