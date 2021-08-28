@@ -6,6 +6,12 @@ open WebSharper.InterfaceGenerator
 
 module Definition =
 
+    let ErrorCtor = !? T<string> * !? T<obj> * !? T<string> * !? T<int> ^-> T<Error>
+
+    // let EventSourceCtor = T<string> * T<obj> ^-> T<EventSource>
+
+    let WebSocketCtor = T<string> * !? (T<string> + !| T<string>) ^-> T<WebSocket>
+
     let AbortSignal =
         Interface "AbortSignal"
         |++> [
@@ -58,6 +64,9 @@ module Definition =
 
     let HttpClient =
         Class "HttpClient"
+        |+> Static [
+            Constructor T<unit>
+        ]
         |+> Instance [
             "delete" => T<string>?url * !? HttpRequest?options ^-> HttpResponse // T<Promise<HttpResponse>>
             |> WithComment "Issues an HTTP DELETE request to the specified URL, returning a Promise that resolves with an HttpResponse representing the result."
@@ -75,7 +84,7 @@ module Definition =
         Class "DefaultHttpClient"
         |=> Inherits HttpClient
         |+> Static [
-            Constructor ILogger?logger // ILogger
+            Constructor ILogger?logger
         ]
 
     let AbortError =
@@ -83,7 +92,7 @@ module Definition =
         |+> Static [
             Constructor T<string>?errorMessage
 
-            "ErrorConstructor" =? T<Error> // ErrorConstructor
+            "ErrorConstructor" =? ErrorCtor
         ]
         |+> Instance [
             "message" =? T<string>
@@ -96,7 +105,7 @@ module Definition =
         |+> Static [
             Constructor (T<string>?errorMessage * T<int>?statusCode)
 
-            "ErrorConstructor" =? T<Error> // ErrorConstructor
+            "ErrorConstructor" =? ErrorCtor
         ]
         |+> Instance [
             "message" =? T<string>
@@ -110,7 +119,7 @@ module Definition =
         |+> Static [
             Constructor T<string>?errorMessage
 
-            "ErrorConstructor" =? T<Error> // ErrorConstructor
+            "ErrorConstructor" =? ErrorCtor
         ]
         |+> Instance [
             "message" =? T<string>
@@ -142,6 +151,104 @@ module Definition =
             |> WithComment "Indicates the state of the <xref:HubConnection> to the server."
         ]
 
+    let HttpTransportType =
+        Pattern.EnumInlines "HttpTransportType" [
+            "None", "0"
+            "WebSockets", "1"
+            "ServerSentEvents", "2"
+            "LongPolling", "4"
+        ]
+
+    let TransferFormat =
+        Pattern.EnumInlines "TransferFormat" [
+            "Text", "1"
+            "Binary", "2"
+        ]
+
+    let ITransport =
+        Interface "ITransport"
+        |++> [
+            "onclose" =? T<Error>?error ^-> T<unit>
+            "onreceive" =? (T<string> + T<ArrayBuffer>)?data ^-> T<unit>
+            "connect" => T<string>?url * TransferFormat?transferFormat ^-> T<Promise<unit>> 
+            "send" => T<obj>?data ^-> T<Promise<unit>>
+            "stop" => T<unit> ^-> T<Promise<unit>>
+        ]
+
+    let IHttpConnectionOptions =
+        Interface "IHttpConnectionOptions"
+        |++> [
+            // "EventSource" =? !? EventSourceCtor
+            "httpClient" =? !? HttpClient
+            "logger" =? !? ILogger + LogLevel
+            "logMessageContent" =? !? T<bool>
+            "skipNegotiation" =? !? T<bool>
+            "transport" =? !? HttpTransportType + ITransport
+            "WebSocket" =? !? WebSocketCtor
+            "accessTokenFactory" => T<unit> ^-> (T<string> + T<Promise<string>>)
+        ]
+
+    let HubMessage =
+        Pattern.EnumStrings "HubMessage" [
+            "InvocationMessage"
+            "StreamInvocationMessage"
+            "StreamItemMessage"
+            "CompletionMessage"
+            "CancelInvocationMessage"
+            "PingMessage"
+            "CloseMessage"
+        ]
+
+    let IHubProtocol =
+        Interface "IHubProtocol"
+        |++> [
+            "name" =? T<string>
+            "transferFormat" =? TransferFormat
+            "version" =? T<int>
+            "parseMessages" => T<int>?input * ILogger?logger ^-> !| HubMessage
+            "parseMessages" => T<ArrayBuffer>?input * ILogger?logger ^-> !| HubMessage
+            // "parseMessages" => T<Buffer>?input ^-> !| HubMessage
+            "writeMessage" => HubMessage?message ^-> (T<string> + T<ArrayBuffer>)
+        ]
+
+    let RetryContext =
+        Interface "RetryContext"
+        |++> [
+            "elapsedMilliseconds" =? T<int>
+            "previousRetryCount" =? T<int>
+            "retryReason" =? T<Error>
+        ]
+
+    let IRetryPolicy =
+        Interface "IRetryPolicy"
+        |++> [
+            "nextRetryDelayInMilliseconds" => RetryContext?retryContext ^-> T<int>
+        ]
+
+    let HubConnectionBuilder =
+        Class "HubConnectionBuilder"
+        |+> Static [
+            Constructor T<unit>
+        ]
+        |+> Instance [
+            "httpConnectionOptions" =? !? IHttpConnectionOptions
+            "logger" =? !? ILogger
+            "protocol" =? !? IHubProtocol
+            "reconnectPolicy" =? !? IRetryPolicy
+            "url" =? !? T<string>
+            "build" => T<unit> ^-> HubConnection
+            "configureLogging" => ILogger?logger ^-> TSelf
+            "configureLogging" => T<string>?logLevel ^-> TSelf
+            "configureLogging" => LogLevel?logLevel ^-> TSelf
+            "withAutomaticReconnect" => T<unit> ^-> TSelf
+            "withAutomaticReconnect" => IRetryPolicy?reconnectPolicy ^-> TSelf
+            "withAutomaticReconnect" => (!| T<int>)?retryDelays ^-> TSelf
+            "withHubProtocol" => IHubProtocol?protocol ^-> TSelf
+            "withUrl" => T<string>?url ^-> TSelf
+            "withUrl" => T<string>?url * HttpTransportType?transportType ^-> TSelf
+            "withUrl" => T<string>?url * IHttpConnectionOptions?options ^-> TSelf
+        ]
+
     let Assembly =
         Assembly [
             Namespace "WebSharper.SignalR.Resources" [
@@ -160,6 +267,15 @@ module Definition =
                 TimeoutError
                 HubConnectionState
                 HubConnection
+                HttpTransportType
+                TransferFormat
+                ITransport
+                IHttpConnectionOptions
+                HubMessage
+                IHubProtocol
+                RetryContext
+                IRetryPolicy
+                HubConnectionBuilder
             ]
         ]
 
