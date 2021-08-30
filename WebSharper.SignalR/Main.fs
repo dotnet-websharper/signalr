@@ -68,15 +68,15 @@ module Definition =
             Constructor T<unit>
         ]
         |+> Instance [
-            "delete" => T<string>?url * !? HttpRequest?options ^-> HttpResponse // T<Promise<HttpResponse>>
+            "delete" => T<string>?url * !? HttpRequest?options ^-> T<Promise<_>>.[HttpResponse]
             |> WithComment "Issues an HTTP DELETE request to the specified URL, returning a Promise that resolves with an HttpResponse representing the result."
-            "get" => T<string>?url * !? HttpRequest?options ^-> HttpResponse // T<Promise<HttpResponse>>
+            "get" => T<string>?url * !? HttpRequest?options ^-> T<Promise<_>>.[HttpResponse]
             |> WithComment "Issues an HTTP GET request to the specified URL, returning a Promise that resolves with an HttpResponse representing the result."
             "getCookieString" => T<string> ^-> T<string>
             |> WithComment "Gets the cookiestring"
-            "post" => T<string>?url * !? HttpRequest?options ^-> HttpResponse // T<Promise<HttpResponse>>
+            "post" => T<string>?url * !? HttpRequest?options ^-> T<Promise<_>>.[HttpResponse]
             |> WithComment "Issues an HTTP POST request to the specified URL, returning a Promise that resolves with an HttpResponse representing the result."
-            "send" => HttpRequest ^-> !? HttpResponse // T<Promise<HttpResponse>>
+            "send" => HttpRequest ^-> !? T<Promise<_>>.[HttpResponse]
             |>WithComment "Send a request, returning a Promise that resolves with an HttpResponse representing the result."
         ]
 
@@ -349,15 +349,14 @@ module Definition =
         ]
 
     let IStreamSubscriber =
-        //Generic - fun t ->
-        Interface "IStreamSubscriber"
-        |++> [
-            "closed" =? !? T<bool>
-            "complete" => T<unit> ^-> T<unit>
-            "error" => T<obj>?err ^-> T<unit>
-            // "next" => T<'T> ^-> TSelf
-            "next" => T<obj> ^-> TSelf
-        ]
+        Generic - fun t ->
+            Interface "IStreamSubscriber"
+            |++> [
+                "closed" =? !? T<bool>
+                "complete" => T<unit> ^-> T<unit>
+                "error" => T<obj>?err ^-> T<unit>
+                "next" => t ^-> TSelf.[t]
+            ]
 
     let ISubscription =
         Interface "ISubscription"
@@ -366,16 +365,17 @@ module Definition =
         ]
 
     let Subject =
-        Class "Subject"
-        |=> Implements [IStreamSubscriber]
-        |+> Static [
-            Constructor T<unit>
-        ]
-        |+> Instance [
-            "cancelCallback" =? !? T<unit -> Promise<unit>>
-            "observers" =? !| IStreamSubscriber
-            "subscribe" => IStreamSubscriber?observer ^-> ISubscription
-        ]
+        Generic - fun t ->
+            Class "Subject"
+            |=> Implements [IStreamSubscriber.[t]]
+            |+> Static [
+                Constructor T<unit>
+            ]
+            |+> Instance [
+                "cancelCallback" =? !? T<unit -> Promise<unit>>
+                "observers" =? !| IStreamSubscriber.[t]
+                "subscribe" => IStreamSubscriber.[t]?observer ^-> ISubscription
+            ]
 
     let XhrHttpClient =
         Class "XhrHttpClient"
@@ -385,10 +385,11 @@ module Definition =
         ]
 
     let IStreamResult =
-        Interface "IStreamResult"
-        |++> [
-            "subscribe" => IStreamSubscriber?subscriber ^-> ISubscription
-        ]
+        Generic - fun t ->
+            Interface "IStreamResult"
+            |++> [
+                "subscribe" => IStreamSubscriber.[t]?subscriber ^-> ISubscription
+            ]
 
     let Assembly =
         Assembly [
