@@ -1,4 +1,4 @@
-﻿namespace WebSharper.SignalR
+﻿namespace WebSharper.SignalR.Extension
 
 open WebSharper
 open WebSharper.JavaScript
@@ -406,7 +406,7 @@ module Definition =
         Class "NullLogger"
         |+> Static [
 
-            "instance" =? TSelf
+            "instance" =? ILogger
             |> WithComment "The singleton instance of the NullLogger."
         ]
         |+> Instance [
