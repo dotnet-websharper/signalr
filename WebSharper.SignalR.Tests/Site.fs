@@ -4,6 +4,7 @@ open WebSharper
 open WebSharper.Sitelets
 open WebSharper.UI
 open WebSharper.UI.Server
+open Microsoft.AspNetCore.SignalR
 
 type EndPoint =
     | [<EndPoint "/">] Home
@@ -24,6 +25,7 @@ module Templating =
         [
             "Home" => EndPoint.Home
             "About" => EndPoint.About
+            "SignalR Tests" => EndPoint.Testing
         ]
 
     let Main ctx action (title: string) (body: Doc list) =
@@ -35,17 +37,11 @@ module Templating =
                 .Doc()
         )
 
-    type TestTemplate = Templating.Template<"testing.html">
+type LetsChat () =
+    inherit Hub ()
 
-    let Testing ctx action (title: string) (body: Doc list) =
-        Content.Page(
-            TestTemplate()
-                .Title(title)
-                .Testing(body)
-                .Doc()
-        )
-
-
+    member x.Send(msg: string) =
+        x.Clients.All.
 
 module Site =
     open WebSharper.UI.Html
@@ -63,8 +59,9 @@ module Site =
         ]
 
     let TestingPage ctx =
-        Templating.Testing ctx EndPoint.Testing "Testing" [
-            h1 [] [text "WebSharper.SignalR tests"]
+        Templating.Main ctx EndPoint.Testing "Testing" [
+            h1 [] [text "SignalR tests"]
+            div [attr.id "myDiv"] [text "Placeholder"]
         ]
 
     [<Website>]

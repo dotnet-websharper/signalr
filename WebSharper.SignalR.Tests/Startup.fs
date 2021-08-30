@@ -13,6 +13,7 @@ open WebSharper.AspNetCore
 type Startup() =
 
     member this.ConfigureServices(services: IServiceCollection) =
+        services.AddSignalR() |> ignore
         services.AddSitelet(Site.Main)
             .AddAuthentication("WebSharper")
             .AddCookie("WebSharper", fun options -> ())
