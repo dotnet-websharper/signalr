@@ -249,10 +249,72 @@ module Definition =
             "withUrl" => T<string>?url * IHttpConnectionOptions?options ^-> TSelf
         ]
 
+    let JsonHubProtocol =
+        Class "JsonHubProtocol"
+        |+> Static [
+            Constructor T<unit>
+        ]
+        |+> Instance [
+            "name" =? T<string>
+            "tranferFormat" =? TransferFormat
+            "version" =? T<int>
+            "parseMessages" => T<string>?input * ILogger?logger ^-> !| HubMessage
+            "writeMessage" => HubMessage?message ^-> T<string>
+        ]
+
+    let NullLogger =
+        Class "NullLogger"
+        |+> Static [
+            Constructor T<unit>
+
+            "instance" =? TSelf
+        ]
+        |+> Instance [
+            "log" => LogLevel?_logLevel * T<string>?_message ^-> T<unit>
+        ]
+
+    let IStreamSubscriber =
+        //Generic - fun t ->
+        Interface "IStreamSubscriber"
+        |++> [
+            "closed" =? !? T<bool>
+            "complete" => T<unit> ^-> T<unit>
+            "error" => T<obj>?err ^-> T<unit>
+            // "next" => T<'T> ^-> TSelf
+            "next" => T<obj> ^-> TSelf
+        ]
+
+    let ISubscription =
+        Interface "ISubscription"
+        |++> [
+            "dispose" => T<unit> ^-> T<unit>
+        ]
+
+    let Subject<'T> =
+        Class "Subject"
+        |=> Implements [IStreamSubscriber]
+        |+> Static [
+            Constructor T<unit>
+        ]
+        |+> Instance [
+            "cancelCallback" =? !? T<unit -> Promise<unit>>
+            "observers" =? !| IStreamSubscriber
+            "subscribe" => IStreamSubscriber?observer ^-> ISubscription
+        ]
+
+    let XhrHttpClient =
+        Class "XhrHttpClient"
+        |=> Inherits HttpClient
+        |+> Static [
+            Constructor ILogger?logger
+        ]
+
+    
+
     let Assembly =
         Assembly [
             Namespace "WebSharper.SignalR.Resources" [
-                Resource "SignalRCDN" "https://cdn.jsdelivr.net/npm/signalr@2.4.2/jquery.signalR.min.js"
+                Resource "SignalRCDN" "https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.9/signalr.min.js"
             ]
             Namespace "WebSharper.SignalR" [
                 AbortSignal
@@ -276,6 +338,12 @@ module Definition =
                 RetryContext
                 IRetryPolicy
                 HubConnectionBuilder
+                JsonHubProtocol
+                NullLogger
+                IStreamSubscriber
+                ISubscription
+                Subject
+                XhrHttpClient
             ]
         ]
 
