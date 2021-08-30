@@ -154,64 +154,22 @@ module Definition =
             "Reconnecting"
         ]
 
-    let HubConnection =
-        Class "HubConnection"
-        |+> Instance [
-            "baseUrl" =? T<string>
-            |> WithComment "Indicates the url of the <xref:HubConnection> to the server. Sets a new url for the HubConnection. Note that the url can only be changed when the connection is in either the Disconnected or Reconnecting states."
-            "connectionId" =? T<string>
-            |> WithComment "Represents the connection id of the <xref:HubConnection> on the server. The connection id will be null when the connection is either in the disconnected state or if the negotiation step was skipped."
-            "keepAliveIntervalInMilliseconds" =? T<int>
-            |> WithComment "Default interval at which to ping the server. The default value is 15,000 milliseconds (15 seconds). Allows the server to detect hard disconnects (like when a client unplugs their computer)."
-            "serverTimeoutInMilliseconds" =? T<int>
-            |> WithComment "The server timeout in milliseconds. If this timeout elapses without receiving any messages from the server, the connection will be terminated with an error. The default timeout value is 30,000 milliseconds (30 seconds)."
-            "state" =? HubConnectionState
-            |> WithComment "Indicates the state of the <xref:HubConnection> to the server."
-        ]
-
-    let HttpTransportType =
-        Pattern.EnumInlines "HttpTransportType" [
-            "None", "0"
-            "WebSockets", "1"
-            "ServerSentEvents", "2"
-            "LongPolling", "4"
-        ]
-
-    let TransferFormat =
-        Pattern.EnumInlines "TransferFormat" [
-            "Text", "1"
-            "Binary", "2"
-        ]
-
-    let ITransport =
-        Interface "ITransport"
+    let RetryContext =
+        Interface "RetryContext"
         |+> [
-            "onclose" =? T<Error>?error ^-> T<unit>
-            "onreceive" =? (T<string> + T<ArrayBuffer>)?data ^-> T<unit>
-            "connect" => T<string>?url * TransferFormat?transferFormat ^-> T<Promise<unit>> 
-            "send" => T<obj>?data ^-> T<Promise<unit>>
-            "stop" => T<unit> ^-> T<Promise<unit>>
+            "elapsedMilliseconds" =? T<int>
+            |> WithComment "The amount of time in milliseconds spent retrying so far."
+            "previousRetryCount" =? T<int>
+            |> WithComment "The number of consecutive failed tries so far."
+            "retryReason" =? T<Error>
+            |> WithComment "The error that forced the upcoming retry."
         ]
 
-    let IHttpConnectionOptions =
-        Interface "IHttpConnectionOptions"
+    let IRetryPolicy =
+        Interface "IRetryPolicy"
         |+> [
-            "EventSource" =? !? EventSourceCtor
-            |> WithComment "A constructor that can be used to create an EventSource."
-            "httpClient" =? !? HttpClient
-            |> WithComment "An HttpClient that will be used to make HTTP requests."
-            "logger" =? !? ILogger + LogLevel
-            |> WithComment "Configures the logger used for logging. Provide an ILogger instance, and log messages will be logged via that instance. Alternatively, provide a value from the LogLevel enumeration and a default logger which logs to the Console will be configured to log messages of the specified level (or higher)."
-            "logMessageContent" =? !? T<bool>
-            |> WithComment "A boolean indicating if message content should be logged. Message content can contain sensitive user data, so this is disabled by default."
-            "skipNegotiation" =? !? T<bool>
-            |> WithComment "A boolean indicating if negotiation should be skipped. Negotiation can only be skipped when the transport property is set to 'HttpTransportType.WebSockets'."
-            "transport" =? !? HttpTransportType + ITransport
-            |> WithComment "An HttpTransportType value specifying the transport to use for the connection."
-            "WebSocket" =? !? WebSocketCtor
-            |> WithComment "A constructor that can be used to create a WebSocket."
-            "accessTokenFactory" => T<unit> ^-> (T<string> + T<Promise<string>>)
-            |> WithComment "A function that provides an access token required for HTTP Bearer authentication."
+            "nextRetryDelayInMilliseconds" => RetryContext?retryContext ^-> T<int>
+            |> WithComment "Called after the transport loses the connection."
         ]
 
     let MessageHeaders =
@@ -314,6 +272,12 @@ module Definition =
         StreamInvocationMessage +
         StreamItemMessage
 
+    let TransferFormat =
+        Pattern.EnumInlines "TransferFormat" [
+            "Text", "1"
+            "Binary", "2"
+        ]
+
     let IHubProtocol =
         Interface "IHubProtocol"
         |+> [
@@ -331,58 +295,141 @@ module Definition =
             |> WithComment "Writes the specified HubMessage to a string or ArrayBuffer and returns it. If transferFormat is 'Text', the result of this method will be a string, otherwise it will be an ArrayBuffer."
         ]
 
-    let RetryContext =
-        Interface "RetryContext"
+    let IStreamSubscriber =
+        Generic - fun t ->
+            Interface "IStreamSubscriber"
+            |+> [
+                "closed" =? !? T<bool>
+                |> WithComment "A boolean that will be set by the IStreamResult when the stream is closed."
+                "complete" => T<unit> ^-> T<unit>
+                |> WithComment "Called by the framework when the end of the stream is reached. After this method is called, no additional methods on the IStreamSubscriber will be called."
+                "error" => T<obj>?err ^-> T<unit>
+                |> WithComment "Called by the framework when an error has occurred. After this method is called, no additional methods on the IStreamSubscriber will be called."
+                "next" => t ^-> TSelf.[t]
+                |> WithComment "Called by the framework when a new item is available."
+            ]
+
+    let ISubscription =
+        Interface "ISubscription"
         |+> [
-            "elapsedMilliseconds" =? T<int>
-            |> WithComment "The amount of time in milliseconds spent retrying so far."
-            "previousRetryCount" =? T<int>
-            |> WithComment "The number of consecutive failed tries so far."
-            "retryReason" =? T<Error>
-            |> WithComment "The error that forced the upcoming retry."
+            "dispose" => T<unit> ^-> T<unit>
+            |> WithComment "Disconnects the IStreamSubscriber associated with this subscription from the stream."
         ]
 
-    let IRetryPolicy =
-        Interface "IRetryPolicy"
+    let IStreamResult =
+        Generic - fun t ->
+            Interface "IStreamResult"
+            |+> [
+                "subscribe" => IStreamSubscriber.[t]?subscriber ^-> ISubscription
+                |> WithComment "Attaches a IStreamSubscriber, which will be invoked when new items are available from the stream."
+            ]
+
+    let HubConnection =
+        Generic - fun t ->
+            Class "HubConnection"
+            |+> Instance [
+                "baseUrl" =? T<string>
+                |> WithComment "Indicates the url of the <xref:HubConnection> to the server. Sets a new url for the HubConnection. Note that the url can only be changed when the connection is in either the Disconnected or Reconnecting states."
+                "connectionId" =? T<string>
+                |> WithComment "Represents the connection id of the <xref:HubConnection> on the server. The connection id will be null when the connection is either in the disconnected state or if the negotiation step was skipped."
+                "keepAliveIntervalInMilliseconds" =? T<int>
+                |> WithComment "Default interval at which to ping the server. The default value is 15,000 milliseconds (15 seconds). Allows the server to detect hard disconnects (like when a client unplugs their computer)."
+                "serverTimeoutInMilliseconds" =? T<int>
+                |> WithComment "The server timeout in milliseconds. If this timeout elapses without receiving any messages from the server, the connection will be terminated with an error. The default timeout value is 30,000 milliseconds (30 seconds)."
+                "state" =? HubConnectionState
+                |> WithComment "Indicates the state of the <xref:HubConnection> to the server."
+                "invoke" => t * t * T<string>?methodName * (!| T<obj>)?args ^-> T<Promise<_>>.[t]
+                |> WithComment "Invokes a hub method on the server using the specified name and arguments. The Promise returned by this method resolves when the server indicates it has finished invoking the method. When the promise resolves, the server has finished invoking the method. If the server method returns a result, it is produced as the result of resolving the Promise."
+                "off" => T<string>?methodName ^-> T<unit>
+                |> WithComment "Removes all handlers for the specified hub method."
+                "off" => T<string>?methodName * (!| T<obj> ^-> T<unit>)?method ^-> T<unit>
+                |> WithComment "Removes the specified handler for the specified hub method. You must pass the exact same Function instance as was previously passed to on(string, (args: any[]) => void). Passing a different instance (even if the function body is the same) will not remove the handler."
+                "on" => T<string>?methodName * (!| T<obj> ^-> T<unit>)?newMethod ^-> T<unit>
+                |> WithComment "Registers a handler that will be invoked when the hub method with the specified method name is invoked."
+                "onclose" => (!? T<Error> ^-> T<unit>)?callback ^-> T<unit>
+                |> WithComment "Registers a handler that will be invoked when the connection is closed."
+                "onreconnected" => (!? T<string> ^-> T<unit>)?callback ^-> T<unit>
+                "onreconnecting" => (!? T<Error> ^-> T<unit>)?callback ^-> T<unit>
+                "send" => T<string>?methodName * (!| T<obj>)?args ^-> T<Promise<unit>>
+                "start" => T<unit> ^-> T<Promise<unit>>
+                "stop" => T<unit> ^-> T<Promise<unit>>
+                "stream" => t * t * T<string>?methodName * (!| T<obj>)?args ^-> IStreamResult.[t]
+            ]
+
+    let HttpTransportType =
+        Pattern.EnumInlines "HttpTransportType" [
+            "None", "0"
+            "WebSockets", "1"
+            "ServerSentEvents", "2"
+            "LongPolling", "4"
+        ]
+
+    let ITransport =
+        Interface "ITransport"
         |+> [
-            "nextRetryDelayInMilliseconds" => RetryContext?retryContext ^-> T<int>
-            |> WithComment "Called after the transport loses the connection."
+            "onclose" =? T<Error>?error ^-> T<unit>
+            "onreceive" =? (T<string> + T<ArrayBuffer>)?data ^-> T<unit>
+            "connect" => T<string>?url * TransferFormat?transferFormat ^-> T<Promise<unit>> 
+            "send" => T<obj>?data ^-> T<Promise<unit>>
+            "stop" => T<unit> ^-> T<Promise<unit>>
+        ]
+
+    let IHttpConnectionOptions =
+        Interface "IHttpConnectionOptions"
+        |+> [
+            "EventSource" =? !? EventSourceCtor
+            |> WithComment "A constructor that can be used to create an EventSource."
+            "httpClient" =? !? HttpClient
+            |> WithComment "An HttpClient that will be used to make HTTP requests."
+            "logger" =? !? ILogger + LogLevel
+            |> WithComment "Configures the logger used for logging. Provide an ILogger instance, and log messages will be logged via that instance. Alternatively, provide a value from the LogLevel enumeration and a default logger which logs to the Console will be configured to log messages of the specified level (or higher)."
+            "logMessageContent" =? !? T<bool>
+            |> WithComment "A boolean indicating if message content should be logged. Message content can contain sensitive user data, so this is disabled by default."
+            "skipNegotiation" =? !? T<bool>
+            |> WithComment "A boolean indicating if negotiation should be skipped. Negotiation can only be skipped when the transport property is set to 'HttpTransportType.WebSockets'."
+            "transport" =? !? HttpTransportType + ITransport
+            |> WithComment "An HttpTransportType value specifying the transport to use for the connection."
+            "WebSocket" =? !? WebSocketCtor
+            |> WithComment "A constructor that can be used to create a WebSocket."
+            "accessTokenFactory" => T<unit> ^-> (T<string> + T<Promise<string>>)
+            |> WithComment "A function that provides an access token required for HTTP Bearer authentication."
         ]
 
     let HubConnectionBuilder =
-        Class "HubConnectionBuilder"
-        |+> Static [
-            Constructor T<unit>
-        ]
-        |+> Instance [
-            "httpConnectionOptions" =? !? IHttpConnectionOptions
-            "logger" =? !? ILogger
-            "protocol" =? !? IHubProtocol
-            "reconnectPolicy" =? !? IRetryPolicy
-            "url" =? !? T<string>
-            "build" => T<unit> ^-> HubConnection
-            |> WithComment "Creates a HubConnection from the configuration options specified in this builder."
-            "configureLogging" => ILogger?logger ^-> TSelf
-            |> WithComment "Configures custom logging for the HubConnection."
-            "configureLogging" => T<string>?logLevel ^-> TSelf
-            |> WithComment "Configures custom logging for the HubConnection."
-            "configureLogging" => LogLevel?logLevel ^-> TSelf
-            |> WithComment "Configures custom logging for the HubConnection."
-            "withAutomaticReconnect" => T<unit> ^-> TSelf
-            |> WithComment "Configures the HubConnection to automatically attempt to reconnect if the connection is lost. By default, the client will wait 0, 2, 10 and 30 seconds respectively before trying up to 4 reconnect attempts."
-            "withAutomaticReconnect" => IRetryPolicy?reconnectPolicy ^-> TSelf
-            |> WithComment "Configures the HubConnection to automatically attempt to reconnect if the connection is lost."
-            "withAutomaticReconnect" => (!| T<int>)?retryDelays ^-> TSelf
-            |> WithComment "Configures the HubConnection to automatically attempt to reconnect if the connection is lost."
-            "withHubProtocol" => IHubProtocol?protocol ^-> TSelf
-            |> WithComment "Configures the HubConnection to use the specified Hub Protocol."
-            "withUrl" => T<string>?url ^-> TSelf
-            |> WithComment "Configures the HubConnection to use HTTP-based transports to connect to the specified URL. The transport will be selected automatically based on what the server and client support."
-            "withUrl" => T<string>?url * HttpTransportType?transportType ^-> TSelf
-            |> WithComment "Configures the HubConnection to use the specified HTTP-based transport to connect to the specified URL."
-            "withUrl" => T<string>?url * IHttpConnectionOptions?options ^-> TSelf
-            |> WithComment "Configures the HubConnection to use HTTP-based transports to connect to the specified URL."
-        ]
+        Generic - fun t -> 
+            Class "HubConnectionBuilder"
+            |+> Static [
+                Constructor T<unit>
+            ]
+            |+> Instance [
+                "httpConnectionOptions" =? !? IHttpConnectionOptions
+                "logger" =? !? ILogger
+                "protocol" =? !? IHubProtocol
+                "reconnectPolicy" =? !? IRetryPolicy
+                "url" =? !? T<string>
+                "build" => T<unit> ^-> HubConnection.[t]
+                |> WithComment "Creates a HubConnection from the configuration options specified in this builder."
+                "configureLogging" => ILogger?logger ^-> TSelf.[t]
+                |> WithComment "Configures custom logging for the HubConnection."
+                "configureLogging" => T<string>?logLevel ^-> TSelf.[t]
+                |> WithComment "Configures custom logging for the HubConnection."
+                "configureLogging" => LogLevel?logLevel ^-> TSelf.[t]
+                |> WithComment "Configures custom logging for the HubConnection."
+                "withAutomaticReconnect" => T<unit> ^-> TSelf.[t]
+                |> WithComment "Configures the HubConnection to automatically attempt to reconnect if the connection is lost. By default, the client will wait 0, 2, 10 and 30 seconds respectively before trying up to 4 reconnect attempts."
+                "withAutomaticReconnect" => IRetryPolicy?reconnectPolicy ^-> TSelf.[t]
+                |> WithComment "Configures the HubConnection to automatically attempt to reconnect if the connection is lost."
+                "withAutomaticReconnect" => (!| T<int>)?retryDelays ^-> TSelf.[t]
+                |> WithComment "Configures the HubConnection to automatically attempt to reconnect if the connection is lost."
+                "withHubProtocol" => IHubProtocol?protocol ^-> TSelf.[t]
+                |> WithComment "Configures the HubConnection to use the specified Hub Protocol."
+                "withUrl" => T<string>?url ^-> TSelf.[t]
+                |> WithComment "Configures the HubConnection to use HTTP-based transports to connect to the specified URL. The transport will be selected automatically based on what the server and client support."
+                "withUrl" => T<string>?url * HttpTransportType?transportType ^-> TSelf.[t]
+                |> WithComment "Configures the HubConnection to use the specified HTTP-based transport to connect to the specified URL."
+                "withUrl" => T<string>?url * IHttpConnectionOptions?options ^-> TSelf.[t]
+                |> WithComment "Configures the HubConnection to use HTTP-based transports to connect to the specified URL."
+            ]
 
     let JsonHubProtocol =
         Class "JsonHubProtocol"
@@ -414,27 +461,6 @@ module Definition =
             |> WithComment "Called by the framework to emit a diagnostic message."
         ]
 
-    let IStreamSubscriber =
-        Generic - fun t ->
-            Interface "IStreamSubscriber"
-            |+> [
-                "closed" =? !? T<bool>
-                |> WithComment "A boolean that will be set by the IStreamResult when the stream is closed."
-                "complete" => T<unit> ^-> T<unit>
-                |> WithComment "Called by the framework when the end of the stream is reached. After this method is called, no additional methods on the IStreamSubscriber will be called."
-                "error" => T<obj>?err ^-> T<unit>
-                |> WithComment "Called by the framework when an error has occurred. After this method is called, no additional methods on the IStreamSubscriber will be called."
-                "next" => t ^-> TSelf.[t]
-                |> WithComment "Called by the framework when a new item is available."
-            ]
-
-    let ISubscription =
-        Interface "ISubscription"
-        |+> [
-            "dispose" => T<unit> ^-> T<unit>
-            |> WithComment "Disconnects the IStreamSubscriber associated with this subscription from the stream."
-        ]
-
     let Subject =
         Generic - fun t ->
             Class "Subject"
@@ -456,18 +482,11 @@ module Definition =
             |> WithComment "Creates a new instance of the XhrHttpClient, using the provided ILogger to log messages."
         ]
 
-    let IStreamResult =
-        Generic - fun t ->
-            Interface "IStreamResult"
-            |+> [
-                "subscribe" => IStreamSubscriber.[t]?subscriber ^-> ISubscription
-                |> WithComment "Attaches a IStreamSubscriber, which will be invoked when new items are available from the stream."
-            ]
-
     let Assembly =
         Assembly [
             Namespace "WebSharper.SignalR.Resources" [
                 Resource "SignalRCDN" "https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.9/signalr.min.js"
+                |> AssemblyWide
             ]
             Namespace "WebSharper.SignalR" [
                 AbortSignal
