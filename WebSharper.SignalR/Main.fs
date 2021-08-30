@@ -8,27 +8,36 @@ module Definition =
 
     let ErrorCtor = !? T<string> * !? T<obj> * !? T<string> * !? T<int> ^-> T<Error>
 
-    // let EventSourceCtor = T<string> * T<obj> ^-> T<EventSource>
+    let EventSourceCtor = T<string> * !? T<EventSourceOptions> ^-> T<EventSource>
 
     let WebSocketCtor = T<string> * !? (T<string> + !| T<string>) ^-> T<WebSocket>
 
     let AbortSignal =
         Interface "AbortSignal"
-        |++> [
-            "abortSignal" =? T<bool>
-            "onabort" => T<unit> ^-> T<unit>
+        |+> [
+            "aborted" =? T<bool>
+            |> WithComment "Indicates if the request has been aborted."
+            "onabort" =@ T<unit> ^-> T<unit>
+            |> WithComment "Set this to a handler that will be invoked when the request is aborted."
         ]
 
     let HttpRequest =
         Interface "HttpRequest"
-        |++> [
+        |+> [
             "abortSignal" =? !? AbortSignal
+            |> WithComment "An AbortSignal that can be monitored for cancellation."
             "content" =? !? T<string> + T<ArrayBuffer>
+            |> WithComment "The body content for the request. May be a string or an ArrayBuffer (for binary data)."
             "headers" =? !? T<Object<string>>
+            |> WithComment "An object describing headers to apply to the request."
             "method" =? !? T<string>
+            |> WithComment "The HTTP method to use for the request."
             "responseType" =? !? T<XMLHttpRequestResponseType>
-            "timeout" =? !? T<int> // num
+            |> WithComment "The XMLHttpRequestResponseType to apply to the request."
+            "timeout" =? !? T<int>
+            |> WithComment "The time to wait for the request to complete before throwing a TimeoutError. Measured in milliseconds."
             "url" =? !? T<string>
+            |> WithComment "The URL for the request."
         ]
 
     let LogLevel =
@@ -44,22 +53,30 @@ module Definition =
 
     let ILogger =
         Interface "ILogger"
-        |++> [
+        |+> [
             "log" => LogLevel?logLevel * T<string>?message ^-> T<string>
+            |> WithComment "Called by the framework to emit a diagnostic message."
         ]
 
     let HttpResponse =
         Class "HttpResponse"
         |+> Static [
             Constructor T<int>?statusCode
+            |> WithComment "Constructs a new instance of HttpResponse with the specified status code."
             Constructor (T<int>?statusCode * T<string>?statusText)
+            |> WithComment "Constructs a new instance of HttpResponse with the specified status code and message."
             Constructor (T<int>?statusCode * T<string>?statusText * T<ArrayBuffer>?content)
+            |> WithComment "Constructs a new instance of HttpResponse with the specified status code, message and binary content."
             Constructor (T<int>?statusCode * T<string>?statusText * T<string>?content)
+            |> WithComment "Constructs a new instance of HttpResponse with the specified status code, message and string content."
         ]
         |+> Instance [
             "content" =? !? (T<ArrayBuffer> + T<string>)
+            |> WithComment "The content of the response"
             "statusCode" =? T<int>
+            |> WithComment "The status code of the response."
             "statusText" =? !? T<string>
+            |> WithComment "The status message of the response."
         ]
 
     let HttpClient =
@@ -85,45 +102,46 @@ module Definition =
         |=> Inherits HttpClient
         |+> Static [
             Constructor ILogger?logger
+            |> WithComment "Creates a new instance of the DefaultHttpClient, using the provided ILogger to log messages."
         ]
 
     let AbortError =
         Class "AbortError"
+        |=> Inherits T<Error>
         |+> Static [
             Constructor T<string>?errorMessage
+            |> WithComment "Constructs a new instance of AbortError."
 
             "ErrorConstructor" =? ErrorCtor
         ]
         |+> Instance [
-            "message" =? T<string>
-            "name" =? T<string>
             "stack" =? !? T<string>
         ]
 
     let HttpError =
         Class "HttpError"
+        |=> Inherits T<Error>
         |+> Static [
             Constructor (T<string>?errorMessage * T<int>?statusCode)
+            |> WithComment "Constructs a new instance of HttpError."
 
             "ErrorConstructor" =? ErrorCtor
         ]
         |+> Instance [
-            "message" =? T<string>
-            "name" =? T<string>
             "stack" =? !? T<string>
             "statusCode" =? T<int>
         ]
 
     let TimeoutError =
         Class "TimeoutError"
+        |=> Inherits T<Error>
         |+> Static [
             Constructor T<string>?errorMessage
+            |> WithComment "Constructs a new instance of TimeoutError."
 
             "ErrorConstructor" =? ErrorCtor
         ]
         |+> Instance [
-            "message" =? T<string>
-            "name" =? T<string>
             "stack" =? !? T<string>
         ]
 
@@ -167,7 +185,7 @@ module Definition =
 
     let ITransport =
         Interface "ITransport"
-        |++> [
+        |+> [
             "onclose" =? T<Error>?error ^-> T<unit>
             "onreceive" =? (T<string> + T<ArrayBuffer>)?data ^-> T<unit>
             "connect" => T<string>?url * TransferFormat?transferFormat ^-> T<Promise<unit>> 
@@ -177,15 +195,23 @@ module Definition =
 
     let IHttpConnectionOptions =
         Interface "IHttpConnectionOptions"
-        |++> [
-            // "EventSource" =? !? EventSourceCtor
+        |+> [
+            "EventSource" =? !? EventSourceCtor
+            |> WithComment "A constructor that can be used to create an EventSource."
             "httpClient" =? !? HttpClient
+            |> WithComment "An HttpClient that will be used to make HTTP requests."
             "logger" =? !? ILogger + LogLevel
+            |> WithComment "Configures the logger used for logging. Provide an ILogger instance, and log messages will be logged via that instance. Alternatively, provide a value from the LogLevel enumeration and a default logger which logs to the Console will be configured to log messages of the specified level (or higher)."
             "logMessageContent" =? !? T<bool>
+            |> WithComment "A boolean indicating if message content should be logged. Message content can contain sensitive user data, so this is disabled by default."
             "skipNegotiation" =? !? T<bool>
+            |> WithComment "A boolean indicating if negotiation should be skipped. Negotiation can only be skipped when the transport property is set to 'HttpTransportType.WebSockets'."
             "transport" =? !? HttpTransportType + ITransport
+            |> WithComment "An HttpTransportType value specifying the transport to use for the connection."
             "WebSocket" =? !? WebSocketCtor
+            |> WithComment "A constructor that can be used to create a WebSocket."
             "accessTokenFactory" => T<unit> ^-> (T<string> + T<Promise<string>>)
+            |> WithComment "A function that provides an access token required for HTTP Bearer authentication."
         ]
 
     let MessageHeaders =
@@ -204,16 +230,19 @@ module Definition =
 
     let HubMessageBase =
         Interface "HubMessageBase"
-        |++> [
+        |+> [
             "type" =? MessageType
+            |> WithComment "A MessageType value indicating the type of this message."
         ]
 
     let HubInvocationMessage =
         Interface "HubInvocationMessage"
         |=> Extends [HubMessageBase]
-        |++> [
+        |+> [
             "headers" =? !? MessageHeaders
+            |> WithComment "A MessageHeaders dictionary containing headers attached to the message."
             "invocationId" =? !? T<string>
+            |> WithComment "The ID of the invocation relating to this message. This is expected to be present for StreamInvocationMessage and CompletionMessage. It may be 'undefined' for an InvocationMessage if the sender does not expect a response."
         ]
 
     let CancelInvocationMessage =
@@ -223,26 +252,33 @@ module Definition =
     let CloseMessage =
         Interface "CloseMessage"
         |=> Extends [HubMessageBase]
-        |++> [
+        |+> [
             "allowReconnect" =? !? T<bool>
+            |> WithComment "If true, clients with automatic reconnects enabled should attempt to reconnect after receiving the CloseMessage. Otherwise, they should not."
             "error" =? !? T<string>
+            |> WithComment "The error that triggered the close, if any. If this property is undefined, the connection was closed normally and without error."
         ]
 
     let CompletionMessage =
         Interface "CompletionMessage"
         |=> Extends [HubInvocationMessage]
-        |++> [
+        |+> [
             "error" =? !? T<string>
+            |> WithComment "The error produced by the invocation, if any. Either error or result must be defined, but not both."
             "result" =? !? T<obj>
+            |> WithComment "The result produced by the invocation, if any. Either error or result must be defined, but not both."
         ]
 
     let InvocationMessage =
         Interface "InvocationMessage"
         |=> Extends [HubInvocationMessage]
-        |++> [
+        |+> [
             "arguments" =? !| T<obj>
+            |> WithComment "The target method arguments."
             "streamIds" =? !| T<string>
+            |> WithComment "The target methods stream IDs."
             "target" =? T<string>
+            |> WithComment "The target method name."
         ]
 
     let PingMessage =
@@ -252,17 +288,21 @@ module Definition =
     let StreamInvocationMessage =
         Interface "StreamInvocationMessage"
         |=> Extends [HubInvocationMessage]
-        |++> [
+        |+> [
             "arguments" =? !| T<obj>
+            |> WithComment "The target method arguments."
             "streamIds" =? !| T<string>
+            |> WithComment "The target methods stream IDs."
             "target" =? T<string>
+            |> WithComment "The target method name."
         ]
 
     let StreamItemMessage =
         Interface "StreamItemMessage"
         |=> Extends [HubInvocationMessage]
-        |++> [
+        |+> [
             "item" =? !? T<obj>
+            |> WithComment "The item produced by the server."
         ]
 
     let HubMessage =
@@ -276,28 +316,37 @@ module Definition =
 
     let IHubProtocol =
         Interface "IHubProtocol"
-        |++> [
+        |+> [
             "name" =? T<string>
+            |> WithComment "The name of the protocol. This is used by SignalR to resolve the protocol between the client and server."
             "transferFormat" =? TransferFormat
+            |> WithComment "The TransferFormat of the protocol."
             "version" =? T<int>
+            |> WithComment "The version of the protocol."
             "parseMessages" => T<int>?input * ILogger?logger ^-> !| HubMessage
+            |> WithComment "Creates an array of HubMessage objects from the specified serialized representation. If transferFormat is 'Text', the input parameter must be a string, otherwise it must be an ArrayBuffer."
             "parseMessages" => T<ArrayBuffer>?input * ILogger?logger ^-> !| HubMessage
-            // "parseMessages" => T<Buffer>?input ^-> !| HubMessage
+            |> WithComment "Creates an array of HubMessage objects from the specified serialized representation. If transferFormat is 'Text', the input parameter must be a string, otherwise it must be an ArrayBuffer."
             "writeMessage" => HubMessage?message ^-> (T<string> + T<ArrayBuffer>)
+            |> WithComment "Writes the specified HubMessage to a string or ArrayBuffer and returns it. If transferFormat is 'Text', the result of this method will be a string, otherwise it will be an ArrayBuffer."
         ]
 
     let RetryContext =
         Interface "RetryContext"
-        |++> [
+        |+> [
             "elapsedMilliseconds" =? T<int>
+            |> WithComment "The amount of time in milliseconds spent retrying so far."
             "previousRetryCount" =? T<int>
+            |> WithComment "The number of consecutive failed tries so far."
             "retryReason" =? T<Error>
+            |> WithComment "The error that forced the upcoming retry."
         ]
 
     let IRetryPolicy =
         Interface "IRetryPolicy"
-        |++> [
+        |+> [
             "nextRetryDelayInMilliseconds" => RetryContext?retryContext ^-> T<int>
+            |> WithComment "Called after the transport loses the connection."
         ]
 
     let HubConnectionBuilder =
@@ -312,16 +361,27 @@ module Definition =
             "reconnectPolicy" =? !? IRetryPolicy
             "url" =? !? T<string>
             "build" => T<unit> ^-> HubConnection
+            |> WithComment "Creates a HubConnection from the configuration options specified in this builder."
             "configureLogging" => ILogger?logger ^-> TSelf
+            |> WithComment "Configures custom logging for the HubConnection."
             "configureLogging" => T<string>?logLevel ^-> TSelf
+            |> WithComment "Configures custom logging for the HubConnection."
             "configureLogging" => LogLevel?logLevel ^-> TSelf
+            |> WithComment "Configures custom logging for the HubConnection."
             "withAutomaticReconnect" => T<unit> ^-> TSelf
+            |> WithComment "Configures the HubConnection to automatically attempt to reconnect if the connection is lost. By default, the client will wait 0, 2, 10 and 30 seconds respectively before trying up to 4 reconnect attempts."
             "withAutomaticReconnect" => IRetryPolicy?reconnectPolicy ^-> TSelf
+            |> WithComment "Configures the HubConnection to automatically attempt to reconnect if the connection is lost."
             "withAutomaticReconnect" => (!| T<int>)?retryDelays ^-> TSelf
+            |> WithComment "Configures the HubConnection to automatically attempt to reconnect if the connection is lost."
             "withHubProtocol" => IHubProtocol?protocol ^-> TSelf
+            |> WithComment "Configures the HubConnection to use the specified Hub Protocol."
             "withUrl" => T<string>?url ^-> TSelf
+            |> WithComment "Configures the HubConnection to use HTTP-based transports to connect to the specified URL. The transport will be selected automatically based on what the server and client support."
             "withUrl" => T<string>?url * HttpTransportType?transportType ^-> TSelf
+            |> WithComment "Configures the HubConnection to use the specified HTTP-based transport to connect to the specified URL."
             "withUrl" => T<string>?url * IHttpConnectionOptions?options ^-> TSelf
+            |> WithComment "Configures the HubConnection to use HTTP-based transports to connect to the specified URL."
         ]
 
     let JsonHubProtocol =
@@ -331,37 +391,48 @@ module Definition =
         ]
         |+> Instance [
             "name" =? T<string>
+            |> WithComment "The name of the protocol. This is used by SignalR to resolve the protocol between the client and server."
             "tranferFormat" =? TransferFormat
+            |> WithComment "The TransferFormat of the protocol."
             "version" =? T<int>
+            |> WithComment "The version of the protocol."
             "parseMessages" => T<string>?input * ILogger?logger ^-> !| HubMessage
+            |> WithComment "Creates an array of HubMessage objects from the specified serialized representation."
             "writeMessage" => HubMessage?message ^-> T<string>
+            |> WithComment "Writes the specified HubMessage to a string and returns it."
         ]
 
     let NullLogger =
         Class "NullLogger"
         |+> Static [
-            Constructor T<unit>
 
             "instance" =? TSelf
+            |> WithComment "The singleton instance of the NullLogger."
         ]
         |+> Instance [
             "log" => LogLevel?_logLevel * T<string>?_message ^-> T<unit>
+            |> WithComment "Called by the framework to emit a diagnostic message."
         ]
 
     let IStreamSubscriber =
         Generic - fun t ->
             Interface "IStreamSubscriber"
-            |++> [
+            |+> [
                 "closed" =? !? T<bool>
+                |> WithComment "A boolean that will be set by the IStreamResult when the stream is closed."
                 "complete" => T<unit> ^-> T<unit>
+                |> WithComment "Called by the framework when the end of the stream is reached. After this method is called, no additional methods on the IStreamSubscriber will be called."
                 "error" => T<obj>?err ^-> T<unit>
+                |> WithComment "Called by the framework when an error has occurred. After this method is called, no additional methods on the IStreamSubscriber will be called."
                 "next" => t ^-> TSelf.[t]
+                |> WithComment "Called by the framework when a new item is available."
             ]
 
     let ISubscription =
         Interface "ISubscription"
-        |++> [
+        |+> [
             "dispose" => T<unit> ^-> T<unit>
+            |> WithComment "Disconnects the IStreamSubscriber associated with this subscription from the stream."
         ]
 
     let Subject =
@@ -382,13 +453,15 @@ module Definition =
         |=> Inherits HttpClient
         |+> Static [
             Constructor ILogger?logger
+            |> WithComment "Creates a new instance of the XhrHttpClient, using the provided ILogger to log messages."
         ]
 
     let IStreamResult =
         Generic - fun t ->
             Interface "IStreamResult"
-            |++> [
+            |+> [
                 "subscribe" => IStreamSubscriber.[t]?subscriber ^-> ISubscription
+                |> WithComment "Attaches a IStreamSubscriber, which will be invoked when new items are available from the stream."
             ]
 
     let Assembly =
