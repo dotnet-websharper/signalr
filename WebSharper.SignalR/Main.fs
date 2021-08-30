@@ -188,16 +188,91 @@ module Definition =
             "accessTokenFactory" => T<unit> ^-> (T<string> + T<Promise<string>>)
         ]
 
-    let HubMessage =
-        Pattern.EnumStrings "HubMessage" [
-            "InvocationMessage"
-            "StreamInvocationMessage"
-            "StreamItemMessage"
-            "CompletionMessage"
-            "CancelInvocationMessage"
-            "PingMessage"
-            "CloseMessage"
+    let MessageHeaders =
+        Interface "MessageHeaders"
+
+    let MessageType =
+        Pattern.EnumInlines "MessageType" [
+            "Invocation", "1"
+            "StreamItem", "2"
+            "Completion", "3"
+            "StreamInvocation", "4"
+            "CancelInvocation", "5"
+            "Ping", "6"
+            "Close", "7"
         ]
+
+    let HubMessageBase =
+        Interface "HubMessageBase"
+        |++> [
+            "type" =? MessageType
+        ]
+
+    let HubInvocationMessage =
+        Interface "HubInvocationMessage"
+        |=> Extends [HubMessageBase]
+        |++> [
+            "headers" =? !? MessageHeaders
+            "invocationId" =? !? T<string>
+        ]
+
+    let CancelInvocationMessage =
+        Interface "CancelInvocationMessage"
+        |=> Extends [HubInvocationMessage]
+
+    let CloseMessage =
+        Interface "CloseMessage"
+        |=> Extends [HubMessageBase]
+        |++> [
+            "allowReconnect" =? !? T<bool>
+            "error" =? !? T<string>
+        ]
+
+    let CompletionMessage =
+        Interface "CompletionMessage"
+        |=> Extends [HubInvocationMessage]
+        |++> [
+            "error" =? !? T<string>
+            "result" =? !? T<obj>
+        ]
+
+    let InvocationMessage =
+        Interface "InvocationMessage"
+        |=> Extends [HubInvocationMessage]
+        |++> [
+            "arguments" =? !| T<obj>
+            "streamIds" =? !| T<string>
+            "target" =? T<string>
+        ]
+
+    let PingMessage =
+        Interface "PingMessage"
+        |=> Extends [HubMessageBase]
+
+    let StreamInvocationMessage =
+        Interface "StreamInvocationMessage"
+        |=> Extends [HubInvocationMessage]
+        |++> [
+            "arguments" =? !| T<obj>
+            "streamIds" =? !| T<string>
+            "target" =? T<string>
+        ]
+
+    let StreamItemMessage =
+        Interface "StreamItemMessage"
+        |=> Extends [HubInvocationMessage]
+        |++> [
+            "item" =? !? T<obj>
+        ]
+
+    let HubMessage =
+        CancelInvocationMessage +
+        CloseMessage +
+        CompletionMessage +
+        InvocationMessage +
+        PingMessage +
+        StreamInvocationMessage +
+        StreamItemMessage
 
     let IHubProtocol =
         Interface "IHubProtocol"
@@ -290,7 +365,7 @@ module Definition =
             "dispose" => T<unit> ^-> T<unit>
         ]
 
-    let Subject<'T> =
+    let Subject =
         Class "Subject"
         |=> Implements [IStreamSubscriber]
         |+> Static [
@@ -309,7 +384,11 @@ module Definition =
             Constructor ILogger?logger
         ]
 
-    
+    let IStreamResult =
+        Interface "IStreamResult"
+        |++> [
+            "subscribe" => IStreamSubscriber?subscriber ^-> ISubscription
+        ]
 
     let Assembly =
         Assembly [
@@ -333,7 +412,17 @@ module Definition =
                 TransferFormat
                 ITransport
                 IHttpConnectionOptions
-                HubMessage
+                MessageHeaders
+                MessageType
+                HubMessageBase
+                HubInvocationMessage
+                CancelInvocationMessage
+                CloseMessage
+                CompletionMessage
+                InvocationMessage
+                PingMessage
+                StreamInvocationMessage
+                StreamItemMessage
                 IHubProtocol
                 RetryContext
                 IRetryPolicy
@@ -344,6 +433,7 @@ module Definition =
                 ISubscription
                 Subject
                 XhrHttpClient
+                IStreamResult
             ]
         ]
 
