@@ -2,3 +2,5 @@
 **/obj
 .vs
 **/Content
+**/Scripts
+**/.vscode
