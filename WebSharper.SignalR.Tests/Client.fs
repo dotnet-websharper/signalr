@@ -1,30 +1,23 @@
-namespace WebSharper.SignalR.Tests
+﻿namespace WebSharper.SignalR.Tests
 
 open WebSharper
-open WebSharper.JavaScript
 open WebSharper.UI
-open WebSharper.UI.Client
 open WebSharper.UI.Templating
-open WebSharper.SignalR
-
+open WebSharper.UI.Notation
 [<JavaScript>]
 module Client =
-    type IndexTemplate = Template<"index.html", ClientLoad.FromDocument>
 
-    type MyLogger (l: LogLevel, msg: string) =
-        interface ILogger with
-            member x.Log(l, msg) =
-                "asd"
+    type MainTemplate = Templating.Template<"Main.html">
 
-    let myLogger = MyLogger(LogLevel.Debug, "debug")
-
-    let client = DefaultHttpClient(myLogger)
-
-    client.Delete("") |> ignore
-
-    [<SPAEntryPoint>]
     let Main () =
-
-        IndexTemplate.Main()
+        let rvReversed = Var.Create ""
+        MainTemplate.MainForm()
+            .OnSend(fun e ->
+                async {
+                    let! res = Server.DoSomething e.Vars.TextToReverse.Value
+                    rvReversed := res
+                }
+                |> Async.StartImmediate
+            )
+            .Reversed(rvReversed.View)
             .Doc()
-        |> Doc.RunById "main"

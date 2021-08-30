@@ -13,25 +13,29 @@ open WebSharper.AspNetCore
 type Startup() =
 
     member this.ConfigureServices(services: IServiceCollection) =
-        ()
+        services.AddSitelet(Site.Main)
+            .AddAuthentication("WebSharper")
+            .AddCookie("WebSharper", fun options -> ())
+        |> ignore
 
     member this.Configure(app: IApplicationBuilder, env: IWebHostEnvironment) =
         if env.IsDevelopment() then app.UseDeveloperExceptionPage() |> ignore
 
-        app.UseDefaultFiles()
+        app.UseAuthentication()
             .UseStaticFiles()
-            .UseWebSharper(fun builder -> builder.UseSitelets(false) |> ignore)
+            .UseWebSharper()
             .Run(fun context ->
                 context.Response.StatusCode <- 404
                 context.Response.WriteAsync("Page not found"))
 
 module Program =
-
-    [<EntryPoint>]
-    let main args =
+    let BuildWebHost args =
         WebHost
             .CreateDefaultBuilder(args)
             .UseStartup<Startup>()
             .Build()
-            .Run()
+
+    [<EntryPoint>]
+    let main args =
+        BuildWebHost(args).Run()
         0
