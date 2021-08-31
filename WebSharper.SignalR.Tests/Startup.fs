@@ -13,6 +13,16 @@ open WebSharper.AspNetCore
 type Startup() =
 
     member this.ConfigureServices(services: IServiceCollection) =
+        services.AddCors(fun o ->
+            o.AddPolicy(
+                "CorsPolicy",
+                fun builder ->
+                    builder
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .WithOrigins("http://localhost:5000")
+                        .AllowCredentials()
+                    |> ignore )) |> ignore
         services.AddSignalR() |> ignore
         services.AddSitelet(Site.Main)
             .AddAuthentication("WebSharper")

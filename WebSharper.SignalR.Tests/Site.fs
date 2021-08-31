@@ -3,13 +3,18 @@ namespace WebSharper.SignalR.Tests
 open WebSharper
 open WebSharper.Sitelets
 open WebSharper.UI
+open WebSharper.UI.Html
+open WebSharper.UI.Templating
 open WebSharper.UI.Server
 open Microsoft.AspNetCore.SignalR
+open System.Threading.Tasks
+open SignalRClient
 
 type EndPoint =
     | [<EndPoint "/">] Home
     | [<EndPoint "/about">] About
-    | [<EndPoint "/signalr">] Testing
+    | [<EndPoint "/chathub">] Chat
+    | [<EndPoint "/chathub/negotiate"; Query "negotiateVersion">] Negotiate of negotiateVersion: int
 
 module Templating =
     open WebSharper.UI.Html
@@ -25,7 +30,7 @@ module Templating =
         [
             "Home" => EndPoint.Home
             "About" => EndPoint.About
-            "SignalR Tests" => EndPoint.Testing
+            "SignalR Tests" => EndPoint.Chat
         ]
 
     let Main ctx action (title: string) (body: Doc list) =
@@ -37,11 +42,21 @@ module Templating =
                 .Doc()
         )
 
+    type TestTemplate = Templating.Template<"testing.html">
+
+    let Testing ctx action (title: string) =
+        Content.Page(
+            TestTemplate()
+                .Title(title)
+                .Elt()
+                .OnAfterRender(fun _ -> MyHub.conn)
+        )
+
 type LetsChat () =
     inherit Hub ()
 
-    member x.Send(msg: string) =
-        x.Clients.All.
+    member x.Send(user: string) (msg: string) : Task =
+        x.Clients.All.SendAsync("ReceiveMessage", user, msg)
 
 module Site =
     open WebSharper.UI.Html
@@ -59,10 +74,7 @@ module Site =
         ]
 
     let TestingPage ctx =
-        Templating.Main ctx EndPoint.Testing "Testing" [
-            h1 [] [text "SignalR tests"]
-            div [attr.id "myDiv"] [text "Placeholder"]
-        ]
+        Templating.Testing ctx EndPoint.Chat "Testing"
 
     [<Website>]
     let Main =
@@ -70,5 +82,6 @@ module Site =
             match endpoint with
             | EndPoint.Home -> HomePage ctx
             | EndPoint.About -> AboutPage ctx
-            | EndPoint.Testing -> TestingPage ctx
+            | EndPoint.Chat -> TestingPage ctx
+            | EndPoint.Negotiate n -> Content.Ok
         )

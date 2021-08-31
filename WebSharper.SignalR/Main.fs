@@ -59,7 +59,7 @@ module Definition =
         ]
 
     let HttpResponse =
-        Class "HttpResponse"
+        Class "signalR.HttpResponse"
         |+> Static [
             Constructor T<int>?statusCode
             |> WithComment "Constructs a new instance of HttpResponse with the specified status code."
@@ -80,7 +80,7 @@ module Definition =
         ]
 
     let HttpClient =
-        Class "HttpClient"
+        Class "signalR.HttpClient"
         |+> Static [
             Constructor T<unit>
         ]
@@ -98,7 +98,7 @@ module Definition =
         ]
 
     let DefaultHttpClient =
-        Class "DefaultHttpClient"
+        Class "signalR.DefaultHttpClient"
         |=> Inherits HttpClient
         |+> Static [
             Constructor ILogger?logger
@@ -106,7 +106,7 @@ module Definition =
         ]
 
     let AbortError =
-        Class "AbortError"
+        Class "signalR.AbortError"
         |=> Inherits T<Error>
         |+> Static [
             Constructor T<string>?errorMessage
@@ -119,7 +119,7 @@ module Definition =
         ]
 
     let HttpError =
-        Class "HttpError"
+        Class "signalR.HttpError"
         |=> Inherits T<Error>
         |+> Static [
             Constructor (T<string>?errorMessage * T<int>?statusCode)
@@ -133,7 +133,7 @@ module Definition =
         ]
 
     let TimeoutError =
-        Class "TimeoutError"
+        Class "signalR.TimeoutError"
         |=> Inherits T<Error>
         |+> Static [
             Constructor T<string>?errorMessage
@@ -326,7 +326,7 @@ module Definition =
 
     let HubConnection =
         Generic - fun t ->
-            Class "HubConnection"
+            Class "signalR.HubConnection"
             |+> Instance [
                 "baseUrl" =? T<string>
                 |> WithComment "Indicates the url of the <xref:HubConnection> to the server. Sets a new url for the HubConnection. Note that the url can only be changed when the connection is in either the Disconnected or Reconnecting states."
@@ -338,7 +338,7 @@ module Definition =
                 |> WithComment "The server timeout in milliseconds. If this timeout elapses without receiving any messages from the server, the connection will be terminated with an error. The default timeout value is 30,000 milliseconds (30 seconds)."
                 "state" =? HubConnectionState
                 |> WithComment "Indicates the state of the <xref:HubConnection> to the server."
-                "invoke" => t * t * T<string>?methodName * (!| T<obj>)?args ^-> T<Promise<_>>.[t]
+                "invoke" => T<string>?methodName * (!| T<obj>)?args ^-> T<Promise<_>>.[t]
                 |> WithComment "Invokes a hub method on the server using the specified name and arguments. The Promise returned by this method resolves when the server indicates it has finished invoking the method. When the promise resolves, the server has finished invoking the method. If the server method returns a result, it is produced as the result of resolving the Promise."
                 "off" => T<string>?methodName ^-> T<unit>
                 |> WithComment "Removes all handlers for the specified hub method."
@@ -375,29 +375,44 @@ module Definition =
         ]
 
     let IHttpConnectionOptions =
-        Interface "IHttpConnectionOptions"
-        |+> [
-            "EventSource" =? !? EventSourceCtor
-            |> WithComment "A constructor that can be used to create an EventSource."
-            "httpClient" =? !? HttpClient
-            |> WithComment "An HttpClient that will be used to make HTTP requests."
-            "logger" =? !? ILogger + LogLevel
-            |> WithComment "Configures the logger used for logging. Provide an ILogger instance, and log messages will be logged via that instance. Alternatively, provide a value from the LogLevel enumeration and a default logger which logs to the Console will be configured to log messages of the specified level (or higher)."
-            "logMessageContent" =? !? T<bool>
-            |> WithComment "A boolean indicating if message content should be logged. Message content can contain sensitive user data, so this is disabled by default."
-            "skipNegotiation" =? !? T<bool>
-            |> WithComment "A boolean indicating if negotiation should be skipped. Negotiation can only be skipped when the transport property is set to 'HttpTransportType.WebSockets'."
-            "transport" =? !? HttpTransportType + ITransport
-            |> WithComment "An HttpTransportType value specifying the transport to use for the connection."
-            "WebSocket" =? !? WebSocketCtor
-            |> WithComment "A constructor that can be used to create a WebSocket."
-            "accessTokenFactory" => T<unit> ^-> (T<string> + T<Promise<string>>)
-            |> WithComment "A function that provides an access token required for HTTP Bearer authentication."
-        ]
+        Pattern.Config "IHttpConnectionOptions" {
+            Required = []
+            Optional = [
+                "EventSource", EventSourceCtor
+                "httpClient", HttpClient.Type
+                "logger", (ILogger + LogLevel)
+                "logMessageContent", T<bool>
+                "skipNegotiation", T<bool>
+                "transport", (HttpTransportType + ITransport)
+                "WebSocket", WebSocketCtor
+                "accessTokenFactory", T<unit> ^-> (T<string> + T<Promise<string>>)
+            ]
+        }
+
+    // let IHttpConnectionOptions =
+    //     Interface "IHttpConnectionOptions"
+    //     |+> [
+    //         "EventSource" =? !? EventSourceCtor
+    //         |> WithComment "A constructor that can be used to create an EventSource."
+    //         "httpClient" =? !? HttpClient
+    //         |> WithComment "An HttpClient that will be used to make HTTP requests."
+    //         "logger" =? !? (ILogger + LogLevel)
+    //         |> WithComment "Configures the logger used for logging. Provide an ILogger instance, and log messages will be logged via that instance. Alternatively, provide a value from the LogLevel enumeration and a default logger which logs to the Console will be configured to log messages of the specified level (or higher)."
+    //         "logMessageContent" =? !? T<bool>
+    //         |> WithComment "A boolean indicating if message content should be logged. Message content can contain sensitive user data, so this is disabled by default."
+    //         "skipNegotiation" =? !? T<bool>
+    //         |> WithComment "A boolean indicating if negotiation should be skipped. Negotiation can only be skipped when the transport property is set to 'HttpTransportType.WebSockets'."
+    //         "transport" =? !? (HttpTransportType + ITransport)
+    //         |> WithComment "An HttpTransportType value specifying the transport to use for the connection."
+    //         "WebSocket" =? !? WebSocketCtor
+    //         |> WithComment "A constructor that can be used to create a WebSocket."
+    //         "accessTokenFactory" => T<unit> ^-> (T<string> + T<Promise<string>>)
+    //         |> WithComment "A function that provides an access token required for HTTP Bearer authentication."
+    //     ]
 
     let HubConnectionBuilder =
         Generic - fun t -> 
-            Class "HubConnectionBuilder"
+            Class "signalR.HubConnectionBuilder"
             |+> Static [
                 Constructor T<unit>
             ]
@@ -432,7 +447,7 @@ module Definition =
             ]
 
     let JsonHubProtocol =
-        Class "JsonHubProtocol"
+        Class "signalR.JsonHubProtocol"
         |+> Static [
             Constructor T<unit>
         ]
@@ -450,7 +465,7 @@ module Definition =
         ]
 
     let NullLogger =
-        Class "NullLogger"
+        Class "signalR.NullLogger"
         |+> Static [
 
             "instance" =? ILogger
@@ -463,7 +478,7 @@ module Definition =
 
     let Subject =
         Generic - fun t ->
-            Class "Subject"
+            Class "signalR.Subject"
             |=> Implements [IStreamSubscriber.[t]]
             |+> Static [
                 Constructor T<unit>
@@ -475,11 +490,54 @@ module Definition =
             ]
 
     let XhrHttpClient =
-        Class "XhrHttpClient"
+        Class "signalR.XhrHttpClient"
         |=> Inherits HttpClient
         |+> Static [
             Constructor ILogger?logger
             |> WithComment "Creates a new instance of the XhrHttpClient, using the provided ILogger to log messages."
+        ]
+
+    let SignalR =
+        Class "signalR"
+        |=> Nested [
+            AbortSignal
+            HttpRequest
+            LogLevel
+            ILogger
+            HttpResponse
+            HttpClient
+            DefaultHttpClient
+            AbortError
+            HttpError
+            TimeoutError
+            HubConnectionState
+            HubConnection
+            HttpTransportType
+            TransferFormat
+            ITransport
+            IHttpConnectionOptions
+            MessageHeaders
+            MessageType
+            HubMessageBase
+            HubInvocationMessage
+            CancelInvocationMessage
+            CloseMessage
+            CompletionMessage
+            InvocationMessage
+            PingMessage
+            StreamInvocationMessage
+            StreamItemMessage
+            IHubProtocol
+            RetryContext
+            IRetryPolicy
+            HubConnectionBuilder
+            JsonHubProtocol
+            NullLogger
+            IStreamSubscriber
+            ISubscription
+            Subject
+            XhrHttpClient
+            IStreamResult
         ]
 
     let Assembly =
@@ -489,44 +547,7 @@ module Definition =
                 |> AssemblyWide
             ]
             Namespace "WebSharper.SignalR" [
-                AbortSignal
-                HttpRequest
-                LogLevel
-                ILogger
-                HttpResponse
-                HttpClient
-                DefaultHttpClient
-                AbortError
-                HttpError
-                TimeoutError
-                HubConnectionState
-                HubConnection
-                HttpTransportType
-                TransferFormat
-                ITransport
-                IHttpConnectionOptions
-                MessageHeaders
-                MessageType
-                HubMessageBase
-                HubInvocationMessage
-                CancelInvocationMessage
-                CloseMessage
-                CompletionMessage
-                InvocationMessage
-                PingMessage
-                StreamInvocationMessage
-                StreamItemMessage
-                IHubProtocol
-                RetryContext
-                IRetryPolicy
-                HubConnectionBuilder
-                JsonHubProtocol
-                NullLogger
-                IStreamSubscriber
-                ISubscription
-                Subject
-                XhrHttpClient
-                IStreamResult
+                SignalR
             ]
         ]
 

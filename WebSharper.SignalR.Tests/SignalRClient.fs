@@ -7,57 +7,64 @@ open WebSharper.UI
 open WebSharper.UI.Html
 
 [<JavaScript>]
-module Tests =
-    type MyLogger () =
-        interface ILogger with
-            override x.Log(logLevel, msg) = "some log"
+module MyHub =
 
-    let myLogger = MyLogger()
+    // type MyOptions () =
+    //     interface SignalR.IHttpConnectionOptions with
+    //         member x.EventSource = Optional.Undefined
+    //         member x.HttpClient = Optional.Undefined
+    //         member x.Logger = Optional.Undefined
+    //         member x.LogMessageContent = Optional.Undefined
+    //         member x.SkipNegotiation = true |> Optional.Defined
+    //         member x.Transport = SignalR.HttpTransportType.WebSockets :> obj |> Optional.Defined
+    //         member x.WebSocket = Optional.Undefined
+    //         member x.AccessTokenFactory () = Union2Of2("token")
 
-    let defaultClient = DefaultHttpClient(myLogger)
+    let options = SignalR.IHttpConnectionOptions()
 
-    let getHome = defaultClient.Get("http://localhost5000/")
-    let getAbout = defaultClient.Get("http://localhost5000/about")
-
-    let result1 =
-        getHome.Then((fun resp -> "success"), (fun _ -> "rejected"))
-
-    let result2 =
-        getAbout.Then((fun resp -> "success"), (fun _ -> "rejected"))
-
-    let tests = [
-        "GET Home"
-        "GET About"
-    ]
-
-    let testResults = [
-        result1
-        result2
-    ]
-
-    // let testView () =
-    //     let zippedTests = List.zip tests testResults
-    //     zippedTests
-    //     |> List.map (fun i ->
-    //         let r =
-    //             snd i
-    //             // |> Async.RunSynchronously
-    //         let t = sprintf "Test: %s, result: %s" (fst i) r
-    //         div [] [text t])
-
-// [<JavaScript>]
-// module Hub =
-
-//     let connection =
-//         HubConnectionBuilder()
-//             .WithUrl("http://localhost/5000/signalr")
-//             .ConfigureLogging(LogLevel.Information)
-//             .Build()
+    let connection : SignalR.HubConnection<string> =
+        SignalR.HubConnectionBuilder()
+            .WithUrl("http://localhost:5000/chathub", options)
+            .ConfigureLogging(SignalR.LogLevel.Trace)
+            .Build()
     
-//     let Start () =
-//         async {
-//             try
-//                 do! connection.Start().AsAsync()
-//             with
-//             | _ -> 
-//         }
+    let conn = 
+        do 
+            let btn = JS.Document.GetElementById("btnSendMessage")
+            btn.SetAttribute("disabled", "")
+
+            let createLi user (msg:string) =
+                let message = msg.Replace("/&/g", "&amp;").Replace("/</g", "&lt;").Replace("/>/g", "&gt;")
+                let encodedMsg = user + " : " + message
+                let li = JS.Document.CreateElement("li")
+                li.TextContent <- encodedMsg
+                li
+
+            connection.On(
+                "ReceiveMessage",
+                fun arr ->
+                    let user = arr.[0] :?> string
+                    let msg = arr.[1] :?> string
+                    let newLi = createLi user msg
+                    JS.Document.GetElementById("messagesList").AppendChild(newLi) |> ignore
+            )
+
+            connection.Start().Then(
+                fun () ->
+                    let btn = JS.Document.GetElementById("btnSendMessage")
+                    btn.SetAttribute("disabled", "not")
+            ).Catch(
+                fun _ -> ()
+            )
+            |> ignore
+
+            JS.Document.GetElementById("btnSendMessage").AddEventListener(
+                "click",
+                fun (ev: Dom.Event) ->
+                    let user = JS.Document.GetElementById("userName").NodeValue
+                    let message = JS.Document.GetElementById("userName").NodeValue
+                    connection.Invoke("SendMessage", [|user :> obj; message :> obj|])
+                        .Catch(fun _ -> ())
+                    |> ignore
+                    ev.PreventDefault()
+            )
