@@ -4,3 +4,8 @@
 **/Content
 **/Scripts
 **/.vscode
+.paket/
+build/
+paket-files/
+*.user
+.fake
