@@ -1,0 +1,13 @@
+framework: netstandard2.0
+source https://api.nuget.org/v3/index.json
+storage: none
+
+nuget FSharp.Core 5.0.0
+nuget FAKE.Core
+nuget Fake.Core.Target
+nuget Fake.IO.FileSystem
+nuget Fake.Tools.Git
+nuget Fake.DotNet.Cli
+nuget Fake.DotNet.AssemblyInfoFile
+nuget Fake.DotNet.Paket
+nuget Paket.Core prerelease //

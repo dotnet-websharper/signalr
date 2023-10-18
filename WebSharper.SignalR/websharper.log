@@ -1,0 +1,11 @@
+2023-10-18 08:56:51.7105|DEBUG|Program|location of wsfscservice is: C:\Users\runneradmin\.nuget\packages\websharper.fsharp\7.0.2.347-beta2\tools\net6.0\win-x64 (server side)
+2023-10-18 08:56:51.7336|DEBUG|Program|pipename is: C:\Users\runneradmin\.nuget\packages\websharper.fsharp\7.0.2.347-beta2\tools\net6.0\win-x64 (server side)
+2023-10-18 08:56:51.7336|DEBUG|Program|Compiling D:\a\build-script\build-script\signalr\WebSharper.SignalR\WebSharper.SignalR.fsproj
+2023-10-18 08:56:51.7440|TRACE|Program|Server sends: e: WebSharper warning WS9002: Please use "binding" instead of "extension" for your project type
+2023-10-18 08:56:56.1692|TRACE|Program|Server sends: n: F# compilation: 00:00:04.5458890
+2023-10-18 08:56:56.2564|TRACE|Program|Server sends: n: Loading IExtension implementation: 00:00:00.0897730
+2023-10-18 08:56:56.3311|TRACE|Program|Server sends: n: Getting Assembly definition: 00:00:00.0747061
+2023-10-18 08:56:56.7720|TRACE|Program|Server sends: n: Built assembly: 00:00:00.4409038
+2023-10-18 08:56:57.2470|TRACE|Program|Server sends: n: Creating WebSharper metadata: 00:00:00.4749207
+2023-10-18 08:56:57.3845|TRACE|Program|Server sends: n: Writing final dll: 00:00:00.1375392
+2023-10-18 08:56:57.3845|TRACE|Program|Server sends: x: 0
