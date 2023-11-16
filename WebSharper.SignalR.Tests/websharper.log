@@ -1,27 +1,27 @@
-2023-11-10 16:16:32.9603|DEBUG|Program|location of wsfscservice is: C:\Users\runneradmin\.nuget\packages\websharper.fsharp\7.0.3.364-beta3\tools\net6.0\win-x64 (server side)
-2023-11-10 16:16:32.9603|DEBUG|Program|pipename is: C:\Users\runneradmin\.nuget\packages\websharper.fsharp\7.0.3.364-beta3\tools\net6.0\win-x64 (server side)
-2023-11-10 16:16:32.9603|DEBUG|Program|Compiling D:\a\build-script\build-script\signalr\WebSharper.SignalR.Tests\WebSharper.SignalR.Tests.fsproj
-2023-11-10 16:16:32.9603|TRACE|Program|Server sends: e: WebSharper warning WS9002: Please use "web" instead of "site" for your project type
-2023-11-10 16:16:35.7480|TRACE|Program|Server sends: e: D:\a\build-script\build-script\signalr\WebSharper.SignalR.Tests\Site.fs(67,21,67,27): warning FS0044: This construct is deprecated. This is an alias of ClientServer.client. Use ClientServer.client instead (or open the type WebSharper.UI.ClientServer) without <@ ... @>.
-2023-11-10 16:16:35.7480|TRACE|Program|Server sends: n: F# compilation: 00:00:02.7952913
-2023-11-10 16:16:37.0784|TRACE|Program|Server sends: n: Checking project: 00:00:01.3294912
-2023-11-10 16:16:37.0784|TRACE|Program|Server sends: n: Waiting on merged metadata: 00:00:00.0008035
-2023-11-10 16:16:37.4196|TRACE|Program|Server sends: n: Parsing with FCS: 00:00:00.3403995
-2023-11-10 16:16:37.4226|TRACE|Program|Server sends: n: Analyzing function arguments: 00:00:00.0030199
-2023-11-10 16:16:37.4761|TRACE|Program|Server sends: n: Resolving names: 00:00:00.0535110
-2023-11-10 16:16:37.6930|TRACE|Program|Server sends: n: WebSharper translation: 00:00:00.2168821
-2023-11-10 16:16:37.7153|TRACE|Program|Server sends: n: Source position transformations: 00:00:00.0223324
-2023-11-10 16:16:37.7688|TRACE|Program|Server sends: n: Packaging assembly: 00:00:00.0534359
-2023-11-10 16:16:37.8885|TRACE|Program|Server sends: n: Writing SignalRClient.MyHub.js: 00:00:00.1197395
-2023-11-10 16:16:37.8885|TRACE|Program|Server sends: n: Writing $StartupCode_SignalRClient.js: 00:00:00.0008565
-2023-11-10 16:16:37.8885|TRACE|Program|Server sends: n: Writing WebSharper.SignalR.Tests.Server.js: 00:00:00.0003447
-2023-11-10 16:16:37.8885|TRACE|Program|Server sends: n: Writing WebSharper.SignalR.Tests.Client.js: 00:00:00.0005842
-2023-11-10 16:16:37.8885|TRACE|Program|Server sends: n: Writing WebSharper.SignalR.Tests.Templating.js: 00:00:00.0003646
-2023-11-10 16:16:37.8885|TRACE|Program|Server sends: n: Writing $Generated.js: 00:00:00.0003107
-2023-11-10 16:16:37.9132|TRACE|Program|Server sends: n: Writing .d.ts files: 00:00:00.0223055
-2023-11-10 16:16:37.9132|TRACE|Program|Server sends: n: Hashing resources: 00:00:00.0025627
-2023-11-10 16:16:38.0340|TRACE|Program|Server sends: n: Serializing metadata: 00:00:00.1182128
-2023-11-10 16:16:38.0879|TRACE|Program|Server sends: n: Writing resources into assembly: 00:00:00.0538580
-2023-11-10 16:16:38.0879|TRACE|Program|Server sends: n: Unpacking into D:\a\build-script\build-script\signalr\WebSharper.SignalR.Tests\wwwroot
-2023-11-10 16:16:38.2328|TRACE|Program|Server sends: n: Unpacking: 00:00:00.1448960
-2023-11-10 16:16:38.2376|TRACE|Program|Server sends: x: 0
+2023-11-16 18:47:58.7240|DEBUG|Program|location of wsfscservice is: C:\Users\runneradmin\.nuget\packages\websharper.fsharp\7.0.4.376-beta3\tools\net6.0\win-x64 (server side)
+2023-11-16 18:47:58.7240|DEBUG|Program|pipename is: C:\Users\runneradmin\.nuget\packages\websharper.fsharp\7.0.4.376-beta3\tools\net6.0\win-x64 (server side)
+2023-11-16 18:47:58.7240|DEBUG|Program|Compiling D:\a\build-script\build-script\signalr\WebSharper.SignalR.Tests\WebSharper.SignalR.Tests.fsproj
+2023-11-16 18:47:58.7240|TRACE|Program|Server sends: e: WebSharper warning WS9002: Please use "web" instead of "site" for your project type
+2023-11-16 18:48:01.5666|TRACE|Program|Server sends: e: D:\a\build-script\build-script\signalr\WebSharper.SignalR.Tests\Site.fs(67,21,67,27): warning FS0044: This construct is deprecated. This is an alias of ClientServer.client. Use ClientServer.client instead (or open the type WebSharper.UI.ClientServer) without <@ ... @>.
+2023-11-16 18:48:01.5666|TRACE|Program|Server sends: n: F# compilation: 00:00:02.8508222
+2023-11-16 18:48:02.8807|TRACE|Program|Server sends: n: Checking project: 00:00:01.3128988
+2023-11-16 18:48:02.8807|TRACE|Program|Server sends: n: Waiting on merged metadata: 00:00:00.0009164
+2023-11-16 18:48:03.2235|TRACE|Program|Server sends: n: Parsing with FCS: 00:00:00.3419447
+2023-11-16 18:48:03.2235|TRACE|Program|Server sends: n: Analyzing function arguments: 00:00:00.0029908
+2023-11-16 18:48:03.2752|TRACE|Program|Server sends: n: Resolving names: 00:00:00.0487168
+2023-11-16 18:48:03.4942|TRACE|Program|Server sends: n: WebSharper translation: 00:00:00.2189602
+2023-11-16 18:48:03.5169|TRACE|Program|Server sends: n: Source position transformations: 00:00:00.0227388
+2023-11-16 18:48:03.5713|TRACE|Program|Server sends: n: Packaging assembly: 00:00:00.0543743
+2023-11-16 18:48:03.6911|TRACE|Program|Server sends: n: Writing SignalRClient.MyHub.js: 00:00:00.1197473
+2023-11-16 18:48:03.6921|TRACE|Program|Server sends: n: Writing $StartupCode_SignalRClient.js: 00:00:00.0009889
+2023-11-16 18:48:03.6921|TRACE|Program|Server sends: n: Writing WebSharper.SignalR.Tests.Server.js: 00:00:00.0006495
+2023-11-16 18:48:03.6921|TRACE|Program|Server sends: n: Writing WebSharper.SignalR.Tests.Client.js: 00:00:00.0003638
+2023-11-16 18:48:03.6921|TRACE|Program|Server sends: n: Writing WebSharper.SignalR.Tests.Templating.js: 00:00:00.0003649
+2023-11-16 18:48:03.6921|TRACE|Program|Server sends: n: Writing $Generated.js: 00:00:00.0002957
+2023-11-16 18:48:03.7161|TRACE|Program|Server sends: n: Writing .d.ts files: 00:00:00.0223516
+2023-11-16 18:48:03.7161|TRACE|Program|Server sends: n: Hashing resources: 00:00:00.0026091
+2023-11-16 18:48:03.8641|TRACE|Program|Server sends: n: Serializing metadata: 00:00:00.1453751
+2023-11-16 18:48:03.9191|TRACE|Program|Server sends: n: Writing resources into assembly: 00:00:00.0550671
+2023-11-16 18:48:03.9191|TRACE|Program|Server sends: n: Unpacking into D:\a\build-script\build-script\signalr\WebSharper.SignalR.Tests\wwwroot
+2023-11-16 18:48:04.0663|TRACE|Program|Server sends: n: Unpacking: 00:00:00.1471660
+2023-11-16 18:48:04.0711|TRACE|Program|Server sends: x: 0
