@@ -13,6 +13,7 @@ tags
     WebSharper Web JavaScript F# C#
 files
     ../WebSharper.SignalR/bin/Release/netstandard2.0/WebSharper.SignalR.dll ==> lib/netstandard2.0
+    ../WebSharper.SignalR/bin/Release/netstandard2.0/WebSharper.SignalR.websharper ==> lib/netstandard2.0
     ../WebSharper.SignalR/bin/Release/netstandard2.0/WebSharper.SignalR.xml ==> lib/netstandard2.0
 dependencies
     framework: netstandard2.0
