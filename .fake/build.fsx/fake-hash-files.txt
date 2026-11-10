@@ -1,3 +1,0 @@
-scriptpath:///build.fsx
-scriptpath:///paket-files/wsbuild/github.com/dotnet-websharper/build-script/WebSharper.Fake.fsx
-scriptpath:///paket-files/wsbuild/github.com/dotnet-websharper/build-script/UpdateLicense.fsx

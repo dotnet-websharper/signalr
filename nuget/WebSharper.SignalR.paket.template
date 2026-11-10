@@ -1,21 +1,21 @@
 type file
 id WebSharper.SignalR
-authors IntelliFactory
-owners IntelliFactory
-projectUrl https://websharper.com/
+authors
+    IntelliFactory
+owners
+    IntelliFactory
 repositoryType git
-repositoryUrl https://github.com/dotnet-websharper/signalr
-licenseUrl http://github.com/intellifactory/websharper.signalr/blob/master/LICENSE.md
+repositoryUrl https://github.com/dotnet-websharper/signalr/
+licenseUrl https://github.com/dotnet-websharper/signalr/blob/master/LICENSE.md
 iconUrl https://github.com/dotnet-websharper/core/raw/websharper50/tools/WebSharper.png
+projectUrl https://github.com/dotnet-websharper/signalr
 description
-    WebSharper Extensions for SignalR 5.0.9
+    WebSharper bindings for the ASP.NET Core SignalR JavaScript client (@microsoft/signalr)
 tags
-    WebSharper Web JavaScript F# C#
+    Web JavaScript F# C# SignalR
 files
     ../WebSharper.SignalR/bin/Release/netstandard2.0/WebSharper.SignalR.dll ==> lib/netstandard2.0
     ../WebSharper.SignalR/bin/Release/netstandard2.0/WebSharper.SignalR.xml ==> lib/netstandard2.0
 dependencies
     framework: netstandard2.0
             WebSharper ~> LOCKEDVERSION:[3]
-frameworkAssemblies
-        System.Web

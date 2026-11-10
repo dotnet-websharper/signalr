@@ -1,0 +1,11 @@
+{
+  "name": "websharper.signalr.sample",
+  "version": "1.0.0",
+  "private": true,
+  "devDependencies": {
+    "esbuild": "^0.24.2"
+  },
+  "dependencies": {
+    "@microsoft/signalr": "^11.0.0"
+  }
+}
