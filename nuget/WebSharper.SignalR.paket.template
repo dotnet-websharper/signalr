@@ -6,7 +6,7 @@ owners
     IntelliFactory
 repositoryType git
 repositoryUrl https://github.com/dotnet-websharper/signalr/
-licenseUrl https://github.com/dotnet-websharper/signalr/blob/master/LICENSE.md
+licenseUrl https://github.com/dotnet-websharper/signalr/blob/main/LICENSE.md
 iconUrl https://github.com/dotnet-websharper/core/raw/websharper50/tools/WebSharper.png
 projectUrl https://github.com/dotnet-websharper/signalr
 description

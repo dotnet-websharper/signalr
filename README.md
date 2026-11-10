@@ -170,7 +170,7 @@ The binding targets `netstandard2.0`; the sample and the hub host target
 
 ## Deployment
 
-Pushing to `master` triggers `.github/workflows/ghpages.yml`, which builds the
+Pushing to `main` triggers `.github/workflows/ghpages.yml`, which builds the
 sample in Release (Paket restore, esbuild bundle) and publishes `dist/` to the
 `gh-pages` branch. The hub host is not deployed.
 
