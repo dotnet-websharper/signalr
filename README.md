@@ -166,7 +166,8 @@ dotnet build WebSharper.SignalR.sln -c Release
 ```
 
 The binding targets `netstandard2.0`; the sample and the hub host target
-`net10.0`. The WebSharper 11 compiler (`wsfsc`) needs the .NET 11 SDK.
+`net10.0`. This branch pins the WebSharper 10 line (`nuget WebSharper ~> 10.0`,
+currently 10.1.10.687) and builds with the .NET 10 SDK.
 
 ## Deployment
 
