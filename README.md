@@ -171,7 +171,7 @@ currently 10.1.10.687) and builds with the .NET 10 SDK.
 
 ## Deployment
 
-Pushing to `master` triggers `.github/workflows/ghpages.yml`, which builds the
+Pushing to `main` triggers `.github/workflows/ghpages.yml`, which builds the
 sample in Release (Paket restore, esbuild bundle) and publishes `dist/` to the
 `gh-pages` branch. The hub host is not deployed.
 
