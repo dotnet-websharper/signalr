@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSharper.SignalR — sample</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%234f46e5'/%3E%3Cpath d='M3 10c2-4 6-4 8 0M3 6c2-4 6-4 8 0' stroke='white' stroke-width='1.6' fill='none'/%3E%3C/svg%3E" />
+    <script>
+        // Apply a previously chosen theme before first paint. Light is the
+        // default; the key is shared with Client.fs (themeStorageKey).
+        try {
+            var t = localStorage.getItem('websharper-signalr-theme');
+            if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+        } catch (e) { }
+    </script>
+    <link rel="stylesheet" href="site.css" />
+    <!-- @microsoft/signalr is bundled from the npm package; the WebSharper head is folded in here. -->
+    
+</head>
+<body>
+    <header class="app-header">
+        <div class="app-titles">
+            <h1>WebSharper.SignalR</h1>
+            <p>SignalR 11 client bindings for F# — with <a href="https://websharper.com">WebSharper</a></p>
+        </div>
+        <div class="app-actions">
+            <button class="btn theme-toggle" ws-onclick="ToggleTheme" title="Switch between the light and dark theme">
+                <span>${themeLabel}</span>
+            </button>
+            <a class="app-source" href="https://github.com/dotnet-websharper/signalr">Source</a>
+        </div>
+    </header>
+
+    <main class="page">
+        <p class="notice">${notice}</p>
+
+        <section class="card">
+            <header class="card-header">
+                <h2>Connection</h2>
+                <p>
+                    The connection is configured with <code>HubConnectionBuilder</code>
+                    (<code>withUrl</code>, <code>configureLogging</code>,
+                    <code>withAutomaticReconnect</code>, <code>withHubProtocol</code>,
+                    <code>withServerTimeout</code>, <code>withKeepAliveInterval</code>) and built
+                    with <code>build()</code>. The sample hub lives at
+                    <code>{origin}/chathub</code>; start <code>WebSharper.SignalR.Server</code> to chat.
+                </p>
+            </header>
+            <div class="grid">
+                <label class="field">
+                    <span>Hub URL</span>
+                    <input class="input" type="text" ws-var="HubUrl" />
+                </label>
+                <label class="field">
+                    <span>Transport</span>
+                    <select class="input" ws-var="Transport">
+                        <option value="None">Automatic</option>
+                        <option value="WebSockets">WebSockets</option>
+                        <option value="ServerSentEvents">Server-Sent Events</option>
+                        <option value="LongPolling">Long Polling</option>
+                    </select>
+                </label>
+                <label class="field">
+                    <span>Log level</span>
+                    <select class="input" ws-var="LogLevel">
+                        <option>Trace</option>
+                        <option>Debug</option>
+                        <option selected>Information</option>
+                        <option>Warning</option>
+                        <option>Error</option>
+                        <option>Critical</option>
+                        <option>None</option>
+                    </select>
+                </label>
+            </div>
+            <div class="toolbar">
+                <button class="btn btn-primary" ws-onclick="Connect">Connect</button>
+                <button class="btn" ws-onclick="Disconnect">Disconnect</button>
+                <span class="spacer"></span>
+                <button class="btn" ws-onclick="Refresh">Refresh state</button>
+            </div>
+            <dl class="readout">
+                <div><dt>state</dt><dd>${state}</dd></div>
+                <div><dt>connectionId</dt><dd>${connectionId}</dd></div>
+                <div><dt>baseUrl</dt><dd>${baseUrl}</dd></div>
+                <div><dt>serverTimeoutInMilliseconds</dt><dd>${serverTimeout}</dd></div>
+                <div><dt>keepAliveIntervalInMilliseconds</dt><dd>${keepAlive}</dd></div>
+            </dl>
+        </section>
+
+        <section class="card">
+            <header class="card-header">
+                <h2>Chat hub</h2>
+                <p>
+                    <code>on("ReceiveMessage", …)</code> receives server pushes,
+                    <code>invoke("SendMessage", …)</code> calls the hub and waits for the
+                    result, and <code>send("SendMessage", …)</code> fire-and-forgets it.
+                </p>
+            </header>
+            <div class="grid">
+                <label class="field">
+                    <span>Name</span>
+                    <input class="input" type="text" ws-var="UserName" />
+                </label>
+                <label class="field">
+                    <span>Message</span>
+                    <input class="input" type="text" ws-var="MessageText" />
+                </label>
+            </div>
+            <div class="toolbar">
+                <button class="btn btn-primary" ws-onclick="SendInvoke">invoke SendMessage</button>
+                <button class="btn" ws-onclick="SendRaw">send SendMessage</button>
+                <button class="btn" ws-onclick="OffHandler">off handler</button>
+            </div>
+            <ul class="messages" ws-hole="Messages"></ul>
+        </section>
+
+        <section class="card">
+            <header class="card-header">
+                <h2>Streaming</h2>
+                <p>
+                    <code>stream("Counter", …)</code> consumes a server-to-client stream
+                    through an <code>IStreamSubscriber</code>; a <code>Subject</code> pushes
+                    a client-to-server stream into <code>send("Upload", subject)</code>.
+                </p>
+            </header>
+            <div class="toolbar">
+                <button class="btn btn-primary" ws-onclick="StartStream">stream Counter</button>
+                <button class="btn" ws-onclick="StopStream">dispose subscription</button>
+                <button class="btn" ws-onclick="UploadSubject">send Upload (Subject)</button>
+            </div>
+            <p class="status">${streamStatus}</p>
+            <ul class="entries" ws-hole="StreamItems"></ul>
+        </section>
+
+        <section class="card">
+            <header class="card-header">
+                <h2>Connection events</h2>
+                <p>
+                    <code>onclose</code>, <code>onreconnecting</code> and
+                    <code>onreconnected</code> callbacks, plus the <code>HubConnectionState</code>
+                    transitions observed by the sample.
+                </p>
+            </header>
+            <div class="toolbar">
+                <button class="btn" ws-onclick="ClearEvents">Clear log</button>
+            </div>
+            <ul class="events" ws-hole="Events"></ul>
+        </section>
+    </main>
+
+    <script type="text/javascript" src="Scripts/WebSharper.SignalR.Sample.min.js"></script>
+</body>
+</html>
